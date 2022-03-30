@@ -94,7 +94,7 @@ var collectData = (rq, cal) => {
     });
     rq.on ('end', () => {
         var parseData = parse(data);
-        var r = url.parse(rq.url, true);
+        var r = rq.url;
 
         if (r == '/new_acao') {
             var nova_acao;
@@ -105,11 +105,8 @@ var collectData = (rq, cal) => {
                 parseData['fracionario'],
                 parseData['setor']
             );
-
             listaAcao.push(nova_acao);           
         }
-
-        console.log(listaAcao);
 
         if(r == '/new_usuario'){
             var novo_usuario;
@@ -119,11 +116,8 @@ var collectData = (rq, cal) => {
                 parseData['nome'],
                 parseData['cpf']
             );
-
             listaUsuario.push(novo_usuario);  
         }
-
-        console.log(listaUsuario);
 
         if(r == '/new_movimentacao'){
             var nova_movimentacao;
@@ -153,6 +147,7 @@ var collectData = (rq, cal) => {
             }
             
         }
+
         cal(parse(data));
     });
 }
@@ -193,7 +188,6 @@ module.exports = (request, response) => {
             case '/new_acao':
                 collectData(request, (data) => {
                     response.writeHead(200, {'Content-Type': 'text/plain'});
-                    console.log(data.fname);
                     response.end("Elemento: " + data.fname + " cadastrado!");
                 });    
                 break;
@@ -201,15 +195,13 @@ module.exports = (request, response) => {
             case '/new_usuario':
                 collectData(request, (data) => {
                     response.writeHead(200, {'Content-Type': 'text/plain'});
-                    console.log(data);
-                    response.end("Elemento: " + data.fname + " cadastrado!");
+                    response.end("Usuário: " + data.nome + " cadastrado!");
                 });    
                 break;
 
             case '/new_movimentacao':
                 collectData(request, (data) => {
                     response.writeHead(200, {'Content-Type': 'text/plain'});
-                    console.log(data.fname);
                     response.end("Elemento: " + data.fname + " cadastrado!");
                 });    
                 break;
