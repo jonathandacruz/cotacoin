@@ -22,69 +22,86 @@ var criaListaAcao = (listaAcao) => {
     let listaAcaoTabela = '';
 
     let layout = `<tr>
-                    <td>{$nome}</td>
-                    <td>{$nome}</td>
+                    <td>{$tipo}</td>
+                    <td>{$codigoIdent}</td>
+                    <td>{$fracionario}</td>
+                    <td>{$setor}</td>
                   </tr>`;
 
 
     listaAcao.forEach((element) => {
-        listaAcaoTabela += layout.replace("", element.tipo)
-                                 .replace("", element.codigoIdent)
-                                 .replace("", element.fracionario)
-                                 .replace("", element.setor)
+        listaAcaoTabela += layout.replace("{$tipo}", element.tipo)
+                                 .replace("{$codigoIdent}", element.codigoIdent)
+                                 .replace("{$fracionario}", element.fracionario)
+                                 .replace("{$setor}", element.setor)
     });
+
+    return listaAcaoTabela;
 }
 
 var criaListaUsuario = (listaUsuario) => {
     let listaUsuarioTabela = '';
 
     let layout = `<tr>
+                    <td>{$codigo}</td>
                     <td>{$nome}</td>
-                    <td>{$nome}</td>
+                    <td>{$cpf}</td>
                   </tr>`;
 
 
     listaUsuario.forEach((element) => {
-        listaUsuarioTabela += layout.replace("", element.codigo)
-                                    .replace("", element.nome)
-                                    .replace("", element.cpf)
+        listaUsuarioTabela += layout.replace("{$codigo}", element.codigo)
+                                    .replace("{$nome}", element.nome)
+                                    .replace("{$cpf}", element.cpf)
     });
+
+    return listaUsuarioTabela;
 }
 
 var criaListaCompra = (listaCompra) => {
     let listaCompraTabela = '';
 
     let layout = `<tr>
-                    <td>{$nome}</td>
-                    <td>{$nome}</td>
+                    <td>{$usuarioId}</td>
+                    <td>{$codigoAcao}</td>
+                    <td>{$tipo}</td>
+                    <td>{$quantidade}</td>
+                    <td>{$cotacao}</td>
                   </tr>`;
 
 
     listaCompra.forEach((element) => {
-        listaCompraTabela += layout.replace("", element.usuarioId)
-                                   .replace("", element.codigoAcao)
-                                   .replace("", element.tipo)
-                                   .replace("", element.quantidade)
-                                   .replace("", element.cotacao)
+        listaCompraTabela += layout.replace("{$usuarioId}", element.usuarioId)
+                                   .replace("{$codigoAcao}", element.codigoAcao)
+                                   .replace("{$tipo}", element.tipo)
+                                   .replace("{$quantidade}", element.quantidade)
+                                   .replace("{$cotacao}", element.cotacao)
     });
+
+    return listaCompraTabela;
 }
 
 var criaListaVenda = (listaVenda) => {
     let listaVendaTabela = '';
 
     let layout = `<tr>
-                    <td>{$nome}</td>
-                    <td>{$nome}</td>
+                    <td>{$usuarioId}</td>
+                    <td>{$codigoAcao}</td>
+                    <td>{$tipo}</td>
+                    <td>{$quantidade}</td>
+                    <td>{$cotacao}</td>
                   </tr>`;
 
 
     listaVenda.forEach((element) => {
-        listaVendaTabela += layout.replace("", element.usuarioId)
-                                  .replace("", element.codigoAcao)
-                                  .replace("", element.tipo)
-                                  .replace("", element.quantidade)
-                                  .replace("", element.cotacao)
+        listaVendaTabela += layout.replace("{$usuarioId}", element.usuarioId)
+                                  .replace("{$codigoAcao}", element.codigoAcao)
+                                  .replace("{$tipo}", element.tipo)
+                                  .replace("{$quantidade}", element.quantidade)
+                                  .replace("{$cotacao}", element.cotacao)
     });
+
+    return listaVendaTabela;
 }
 
 var collectData = (rq, cal) => {
@@ -164,11 +181,11 @@ module.exports = (request, response) => {
 
             case '/acoes':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("acoes.html"));
+                response.end(readFile("acoes.html").replace("{$listaAcaoTabela}", criaListaAcao(listaAcao)));
                 break;
             case '/usuarios':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("usuarios.html"));
+                response.end(readFile("usuarios.html").replace("{$listaUsuarioTabela}", criaListaUsuario(listaUsuario)));
                 break;
             case '/movimentacao':
                 response.writeHead(200, {'Content-Type': 'text/html'});
@@ -187,15 +204,15 @@ module.exports = (request, response) => {
         switch (request.url.trim()) {
             case '/new_acao':
                 collectData(request, (data) => {
-                    response.writeHead(200, {'Content-Type': 'text/plain'});
-                    response.end("Elemento: " + data.fname + " cadastrado!");
+                    response.writeHead(200, {'Content-Type': 'text/html'});
+                    response.end(readFile("/new_acao.html"));
                 });    
                 break;
         
             case '/new_usuario':
                 collectData(request, (data) => {
-                    response.writeHead(200, {'Content-Type': 'text/plain'});
-                    response.end("Usuário: " + data.nome + " cadastrado!");
+                    response.writeHead(200, {'Content-Type': 'text/html'});
+                    response.end(readFile("new_usuario.html").replace("{$nome}", data.nome));
                 });    
                 break;
 

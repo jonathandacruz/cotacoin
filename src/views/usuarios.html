@@ -17,12 +17,18 @@
             margin: 0 auto;
         }
         .title {
-            padding: 22px;
+            padding-top: 22px;
+            padding-bottom: 22px;
+            font-size: 24px;
         }
     </style>
 
+
+    
+
     <section class="content">
-        <div class="title"> Cadastro de Usuários </div>
+    
+        <div class="title"> <b>Cadastro de Usuários</b> </div>
 
         <div>
             <form method="POST" action="/new_usuario">
@@ -46,6 +52,19 @@
         </div>
     </section>
 
+
+    <table class="table table-striped content" style="margin-top: 50px;">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nome</th>
+            <th scope="col">CPF</th>
+          </tr>
+        </thead>
+        <tbody>
+          {$listaUsuarioTabela}
+        </tbody>
+      </table>
 
 
     
