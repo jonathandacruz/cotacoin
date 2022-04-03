@@ -18,6 +18,12 @@ var readFile = (file) => {
     return html;
 };
 
+var readCss = (file) => {
+    let html = fs.readFileSync(__dirname + "/src/css/"+ file );
+    return html;
+};
+
+
 var criaListaAcao = (listaAcao) => {
     let listaAcaoTabela = '';
 
@@ -35,6 +41,20 @@ var criaListaAcao = (listaAcao) => {
                                  .replace("{$fracionario}", element.fracionario)
                                  .replace("{$setor}", element.setor)
     });
+
+    return listaAcaoTabela;
+}
+
+var criaSelectAcao = (listaAcao) => {
+    let listaAcaoTabela = '';
+
+    let layout = ` <option value="{$codigoIdent}">{$nome}</option> `;
+
+
+    listaAcao.forEach((element) => {
+        listaAcaoTabela += layout.replace("{$codigoIdent}", element.codigoIdent)
+                                 .replace("{$nome}", element.codigoIdent)
+     });
 
     return listaAcaoTabela;
 }
@@ -58,8 +78,25 @@ var criaListaUsuario = (listaUsuario) => {
     return listaUsuarioTabela;
 }
 
+var criaListaUsuarioSelect = (listaUsuario) => {
+    let listaUsuarioTabela = '';
+
+    let layout = ` <option value="{$codigo}">{$nome}</option> `;
+
+    listaUsuario.forEach((element) => {
+        listaUsuarioTabela += layout.replace("{$codigo}", element.codigo)
+                                    .replace("{$nome}", element.nome)
+                                   
+    });
+
+    return listaUsuarioTabela;
+}
+
+
 var criaListaCompra = (listaCompra) => {
     let listaCompraTabela = '';
+
+    
 
     let layout = `<tr>
                     <td>{$usuarioId}</td>
@@ -71,7 +108,11 @@ var criaListaCompra = (listaCompra) => {
 
 
     listaCompra.forEach((element) => {
-        listaCompraTabela += layout.replace("{$usuarioId}", element.usuarioId)
+
+        let searchUsuario ;
+        searchUsuario = listaUsuario.findIndex((obj) => obj.codigo ==  element.usuarioId);
+         
+        listaCompraTabela += layout.replace("{$usuarioId}", listaUsuario[searchUsuario].nome)
                                    .replace("{$codigoAcao}", element.codigoAcao)
                                    .replace("{$tipo}", element.tipo)
                                    .replace("{$quantidade}", element.quantidade)
@@ -90,11 +131,16 @@ var criaListaVenda = (listaVenda) => {
                     <td>{$tipo}</td>
                     <td>{$quantidade}</td>
                     <td>{$cotacao}</td>
+                    
                   </tr>`;
 
 
     listaVenda.forEach((element) => {
-        listaVendaTabela += layout.replace("{$usuarioId}", element.usuarioId)
+
+        let searchUsuario ;
+        searchUsuario = listaUsuario.findIndex((obj) => obj.codigo ==  element.usuarioId);
+
+        listaVendaTabela += layout.replace("{$usuarioId}", listaUsuario[searchUsuario].nome)
                                   .replace("{$codigoAcao}", element.codigoAcao)
                                   .replace("{$tipo}", element.tipo)
                                   .replace("{$quantidade}", element.quantidade)
@@ -138,25 +184,31 @@ var collectData = (rq, cal) => {
 
         if(r == '/new_movimentacao'){
             var nova_movimentacao;
-
-            if(parseData['tipo'] === 0){
+            var qtde = 0;
+            
+            if (parseData['tipo'] == 'lote'){
+                qtde = parseData['quantidade'] * 100;
+            } else {
+                qtde = parseData['quantidade'];
+            }
+            if(parseData['typeOrder'] === 'compra'){
                 nova_movimentacao = new MovimentacaoModel(
                     parseData['usuarioId'],
                     parseData['codigoAcao'],
-                    parseData['tipo'],
-                    parseData['quantidade'],
+                    parseData['typeOrder'],
+                    qtde,
                     parseData['cotacao']
                 );
 
                 listaCompra.push(nova_movimentacao);
             }
 
-            if(parseData['tipo'] === 1){
+            if(parseData['typeOrder'] === 'venda'){
                 nova_movimentacao = new MovimentacaoModel(
                     parseData['usuarioId'],
                     parseData['codigoAcao'],
-                    parseData['tipo'],
-                    parseData['quantidade'],
+                    parseData['typeOrder'],
+                    qtde,
                     parseData['cotacao']
                 );
 
@@ -173,12 +225,14 @@ module.exports = (request, response) => {
     if (request.method === 'GET') {
         
         let url_parsed = url.parse(request.url, true);
+
+         
+
         switch (url_parsed.pathname) {
             case '/':
                 response.writeHead(200, {'Content-Type': 'text/html'});
                 response.end(readFile("index.html"));
                 break;
-
             case '/acoes':
                 response.writeHead(200, {'Content-Type': 'text/html'});
                 response.end(readFile("acoes.html").replace("{$listaAcaoTabela}", criaListaAcao(listaAcao)));
@@ -189,8 +243,14 @@ module.exports = (request, response) => {
                 break;
             case '/movimentacao':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("movimentacao.html"));
+                response.end(readFile("movimentacao.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
+                                                          .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
                 break;
+            case '/ordens':
+                    response.writeHead(200, {'Content-Type': 'text/html'});
+                    response.end(readFile("ordens.html").replace("{$listaMovimentoCompra}", criaListaCompra(listaCompra))
+                                                        .replace("{$listaMovimentoVenda}", criaListaVenda(listaVenda)));
+                    break;    
             case '/element':
                 response.writeHead(200, {'Content-Type': 'text/plain'});
                 response.end("Elemento: " +url_parsed.query.id + " acessado!");
@@ -199,7 +259,9 @@ module.exports = (request, response) => {
             default:
                 break;
         }
-      } else if (request.method === 'POST') {
+      }
+       
+      else if (request.method === 'POST') {
 
         switch (request.url.trim()) {
             case '/new_acao':
@@ -218,8 +280,8 @@ module.exports = (request, response) => {
 
             case '/new_movimentacao':
                 collectData(request, (data) => {
-                    response.writeHead(200, {'Content-Type': 'text/plain'});
-                    response.end("Elemento: " + data.fname + " cadastrado!");
+                    response.writeHead(200, {'Content-Type': 'text/html'});
+                    response.end(readFile("new_movimentacao.html").replace("{tipoOrdem}", data.typeOrder ));
                 });    
                 break;
             default:

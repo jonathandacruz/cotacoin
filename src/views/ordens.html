@@ -45,17 +45,25 @@
     </style>
 
 
-    
-
-    <section class="content">
-    
-        <div class="title"> <b>Ação cadastrado com sucesso!</b> </div>
-
-        <a class="btn btn-danger" href="/acoes">Voltar</a>
-
-    </section>
+  
 
 
+    <table class="table table-striped content" style="margin-top: 50px;">
+        <thead>
+          <tr>
+            <th scope="col">Usuário</th>
+            <th scope="col">Ação</th>
+            <th scope="col">Tipo de Ordem</th>
+            <th scope="col">Quantidade</th>
+            <th scope="col">Cotação</th>
+            
+          </tr>
+        </thead>
+        <tbody>
+          {$listaMovimentoCompra}
+          {$listaMovimentoVenda}
+        </tbody>
+      </table>
 
 
     
