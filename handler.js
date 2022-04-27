@@ -1,11 +1,14 @@
 const fs = require("fs");
 const {parse} = require("querystring");
 
+const db = require("./db");
+
 var url = require('url');
 var path = require('path');
 const AcaoModel = require('./src/models/acao.js');
 const UsuarioModel = require("./src/models/usuario.js");
 const MovimentacaoModel = require("./src/models/movimentacao.js");
+const DividendoModel = require("./src/models/dividendos");
 
 var listaAcao = [];
 var listaUsuario = [];
@@ -99,7 +102,6 @@ var criaListaCompra = (listaCompra) => {
     
 
     let layout = `<tr>
-                    <td>{$usuarioId}</td>
                     <td>{$codigoAcao}</td>
                     <td>{$tipo}</td>
                     <td>{$quantidade}</td>
@@ -108,12 +110,8 @@ var criaListaCompra = (listaCompra) => {
 
 
     listaCompra.forEach((element) => {
-
-        let searchUsuario ;
-        searchUsuario = listaUsuario.findIndex((obj) => obj.codigo ==  element.usuarioId);
          
-        listaCompraTabela += layout.replace("{$usuarioId}", listaUsuario[searchUsuario].nome)
-                                   .replace("{$codigoAcao}", element.codigoAcao)
+        listaCompraTabela += layout.replace("{$codigoAcao}", element.codigoAcao)
                                    .replace("{$tipo}", element.tipo)
                                    .replace("{$quantidade}", element.quantidade)
                                    .replace("{$cotacao}", element.cotacao)
@@ -126,7 +124,6 @@ var criaListaVenda = (listaVenda) => {
     let listaVendaTabela = '';
 
     let layout = `<tr>
-                    <td>{$usuarioId}</td>
                     <td>{$codigoAcao}</td>
                     <td>{$tipo}</td>
                     <td>{$quantidade}</td>
@@ -137,11 +134,7 @@ var criaListaVenda = (listaVenda) => {
 
     listaVenda.forEach((element) => {
 
-        let searchUsuario ;
-        searchUsuario = listaUsuario.findIndex((obj) => obj.codigo ==  element.usuarioId);
-
-        listaVendaTabela += layout.replace("{$usuarioId}", listaUsuario[searchUsuario].nome)
-                                  .replace("{$codigoAcao}", element.codigoAcao)
+        listaVendaTabela += layout.replace("{$codigoAcao}", element.codigoAcao)
                                   .replace("{$tipo}", element.tipo)
                                   .replace("{$quantidade}", element.quantidade)
                                   .replace("{$cotacao}", element.cotacao)
@@ -168,7 +161,8 @@ var collectData = (rq, cal) => {
                 parseData['fracionario'],
                 parseData['setor']
             );
-            listaAcao.push(nova_acao);           
+            global.connection.collection("acoes").insertOne(nova_acao);
+            //listaAcao.push(nova_acao);           
         }
 
         if(r == '/new_usuario'){
@@ -179,7 +173,22 @@ var collectData = (rq, cal) => {
                 parseData['nome'],
                 parseData['cpf']
             );
-            listaUsuario.push(novo_usuario);  
+            global.connection.collection("usuarios").insertOne(novo_usuario);
+            //listaUsuario.push(novo_usuario);  
+        }
+
+        if(r == '/new_dividendo'){
+            var novo_dividendo;
+
+            novo_dividendo = new DividendoModel(
+                parseData['usuarioId'],
+                parseData['codigoAcao'],
+                parseData['valor'],
+                parseData['dataCompra'],
+                parseData['dataPagamento']
+            );
+            global.connection.collection("dividendos").insertOne(novo_dividendo);
+            //listaUsuario.push(novo_usuario);  
         }
 
         if(r == '/new_movimentacao'){
@@ -200,7 +209,7 @@ var collectData = (rq, cal) => {
                     parseData['cotacao']
                 );
 
-                listaCompra.push(nova_movimentacao);
+                global.connection.collection("movimentacao").insertOne(nova_movimentacao);
             }
 
             if(parseData['typeOrder'] === 'venda'){
@@ -212,7 +221,7 @@ var collectData = (rq, cal) => {
                     parseData['cotacao']
                 );
 
-                listaVenda.push(nova_movimentacao);
+                global.connection.collection("movimentacao").insertOne(nova_movimentacao);
             }
             
         }
@@ -221,12 +230,134 @@ var collectData = (rq, cal) => {
     });
 }
 
+var loadDataAcoes = (response) => {
+    let list = [];
+     global.connection.collection("acoes").find({}).toArray((err, docs) => {
+        if (err) {
+            console.log("Deu merda!");
+            return;
+        }
+        console.log(docs);
+
+        docs.forEach(element => {
+            list.push(element);  
+        });
+
+
+        response.end(readFile("acoes.html").replace("{$listaAcaoTabela}", criaListaAcao(list)));
+    });
+}
+
+var loadDataUsuarios = (response) => {
+    let list = [];
+     global.connection.collection("usuarios").find({}).toArray((err, docs) => {
+        if (err) {
+            console.log("Deu merda!");
+            return;
+        }
+        console.log(docs);
+
+        docs.forEach(element => {
+            list.push(element);  
+        });
+
+
+        response.end(readFile("usuarios.html").replace("{$listaUsuarioTabela}", criaListaUsuario(list)));
+    });
+}
+
+var loadDataMovimentacao = (response) => {
+    let listaUsuario = [];
+    let listaAcao = [];
+    global.connection.collection("usuarios").find({}).toArray((err, docs) => {
+        if (err) {
+            console.log("Deu merda!");
+            return;
+        }
+        console.log(docs);
+
+        docs.forEach(element => {
+            listaUsuario.push(element);  
+        });
+
+        
+        global.connection.collection("acoes").find({}).toArray((err, docs) => {
+            if (err) {
+                console.log("Deu merda!");
+                return;
+            }
+            console.log(docs);
+    
+            docs.forEach(element => {
+                listaAcao.push(element);  
+            });
+
+        response.end(readFile("movimentacao.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
+            .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
+        });
+
+        
+    });
+}
+
+var loadDataOrdens = (response) => {
+    let list = [];
+     global.connection.collection("movimentacao").find({}).toArray((err, docs) => {
+        if (err) {
+            console.log("Deu merda!");
+            return;
+        }
+        console.log(docs);
+
+        docs.forEach(element => {
+            list.push(element);  
+        });
+
+
+        response.end(readFile("ordens.html").replace("{$listaMovimentoCompra}", criaListaCompra(list))
+                                            .replace("{$listaMovimentoVenda}", criaListaVenda(list)));
+                    
+    });
+}
+
+var loadDataDividendo = (response) => {
+    let listaUsuario = [];
+    let listaAcao = [];
+    global.connection.collection("usuarios").find({}).toArray((err, docs) => {
+        if (err) {
+            console.log("Deu merda!");
+            return;
+        }
+        console.log(docs);
+
+        docs.forEach(element => {
+            listaUsuario.push(element);  
+        });
+
+        
+        global.connection.collection("acoes").find({}).toArray((err, docs) => {
+            if (err) {
+                console.log("Deu merda!");
+                return;
+            }
+            console.log(docs);
+    
+            docs.forEach(element => {
+                listaAcao.push(element);  
+            });
+
+        response.end(readFile("dividendos.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
+            .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
+        });
+
+        
+    });
+}
+
 module.exports = (request, response) => {
     if (request.method === 'GET') {
         
         let url_parsed = url.parse(request.url, true);
-
-         
 
         switch (url_parsed.pathname) {
             case '/':
@@ -235,22 +366,29 @@ module.exports = (request, response) => {
                 break;
             case '/acoes':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("acoes.html").replace("{$listaAcaoTabela}", criaListaAcao(listaAcao)));
+                loadDataAcoes(response);
+                //response.end(readFile("acoes.html").replace("{$listaAcaoTabela}", criaListaAcao(listaAcao)));
                 break;
             case '/usuarios':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("usuarios.html").replace("{$listaUsuarioTabela}", criaListaUsuario(listaUsuario)));
+                loadDataUsuarios(response);
+                //response.end(readFile("usuarios.html").replace("{$listaUsuarioTabela}", criaListaUsuario(listaUsuario)));
                 break;
             case '/movimentacao':
                 response.writeHead(200, {'Content-Type': 'text/html'});
-                response.end(readFile("movimentacao.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
-                                                          .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
+                loadDataMovimentacao(response);
+                //response.end(readFile("movimentacao.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario)).replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
                 break;
             case '/ordens':
                     response.writeHead(200, {'Content-Type': 'text/html'});
-                    response.end(readFile("ordens.html").replace("{$listaMovimentoCompra}", criaListaCompra(listaCompra))
-                                                        .replace("{$listaMovimentoVenda}", criaListaVenda(listaVenda)));
-                    break;    
+                    loadDataOrdens(response);
+                    //response.end(readFile("ordens.html").replace("{$listaMovimentoCompra}", criaListaCompra(listaCompra))
+                    //                                    .replace("{$listaMovimentoVenda}", criaListaVenda(listaVenda)));
+                    break;
+            case '/dividendos':
+                response.writeHead(200, {'Content-Type': 'text/html'});
+                loadDataDividendo(response);
+                break;
             case '/element':
                 response.writeHead(200, {'Content-Type': 'text/plain'});
                 response.end("Elemento: " +url_parsed.query.id + " acessado!");
@@ -282,6 +420,12 @@ module.exports = (request, response) => {
                 collectData(request, (data) => {
                     response.writeHead(200, {'Content-Type': 'text/html'});
                     response.end(readFile("new_movimentacao.html").replace("{tipoOrdem}", data.typeOrder ));
+                });    
+                break;
+            case '/new_dividendo':
+                collectData(request, (data) => {
+                    response.writeHead(200, {'Content-Type': 'text/html'});
+                    response.end(readFile("new_dividendo.html").replace("{tipoOrdem}", data.typeOrder ));
                 });    
                 break;
             default:
