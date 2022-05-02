@@ -143,6 +143,31 @@ var criaListaVenda = (listaVenda) => {
     return listaVendaTabela;
 }
 
+var criaListaDividendos = (listaDividendos) => {
+    let listaDividendosTabela = '';
+
+    let layout = `<tr>
+                    <td>{$usuarioId}</td>
+                    <td>{$codigoAcao}</td>
+                    <td>{$dataCompra}</td>
+                    <td>{$dataPagamento}</td>
+                    <td>{$valor}</td>
+                
+                  </tr>`;
+
+
+        listaDividendos.forEach((element) => {
+
+        listaDividendosTabela += layout.replace("{$usuarioId}", element.usuarioId)
+                                  .replace("{$codigoAcao}", element.codigoAcao)
+                                  .replace("{$dataCompra}", element.dataCompra)
+                                  .replace("{$dataPagamento}", element.dataPagamento)
+                                  .replace("{$valor}", element.valor)
+    });
+
+    return listaDividendosTabela;
+}
+
 var collectData = (rq, cal) => {
     var data = '';
     rq.on('data', (chunk) => {
@@ -180,12 +205,14 @@ var collectData = (rq, cal) => {
         if(r == '/new_dividendo'){
             var novo_dividendo;
 
+            console.log(parseData);
+
             novo_dividendo = new DividendoModel(
                 parseData['usuarioId'],
                 parseData['codigoAcao'],
                 parseData['valor'],
-                parseData['dataCompra'],
-                parseData['dataPagamento']
+                Date(parseData['dataCompra']),
+                Date(parseData['dataPagamento'])
             );
             global.connection.collection("dividendos").insertOne(novo_dividendo);
             //listaUsuario.push(novo_usuario);  
@@ -323,6 +350,7 @@ var loadDataOrdens = (response) => {
 var loadDataDividendo = (response) => {
     let listaUsuario = [];
     let listaAcao = [];
+    let listaDividendos = [];
     global.connection.collection("usuarios").find({}).toArray((err, docs) => {
         if (err) {
             console.log("Deu merda!");
@@ -346,8 +374,22 @@ var loadDataDividendo = (response) => {
                 listaAcao.push(element);  
             });
 
-        response.end(readFile("dividendos.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
-            .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao)));
+
+            global.connection.collection("dividendos").find({}).toArray((err, docs) => {
+                if (err) {
+                    console.log("Deu merda!");
+                    return;
+                }
+                console.log(docs);
+        
+                docs.forEach(element => {
+                    listaDividendos.push(element);  
+                });
+    
+            response.end(readFile("dividendos.html").replace("{$listaUsuarioSelect}", criaListaUsuarioSelect(listaUsuario))
+                                                    .replace("{$listaAcaoSelect}", criaSelectAcao(listaAcao))
+                                                    .replace("{$listaDividendos}", criaListaDividendos(listaDividendos)));
+            });
         });
 
         
